@@ -1,12 +1,14 @@
 package chapter10
-import org.scalatest.Assertions._
-
-import scala.util.Random
 
 object MonoidType {
   trait Monoid[A] {
     def op(a1: A, a2: A): A
     def zero: A
+  }
+
+  val intMonoid: Monoid[Int] = new Monoid[Int] {
+    override def op(a1: Int, a2: Int): Int = a1 + a2
+    override def zero: Int = 0
   }
 
   val stringMonoid: Monoid[String] = new Monoid[String] {
@@ -35,62 +37,22 @@ object MonoidType {
     }
     override def zero: A => A = identity
   }
-}
 
-object MonoidLaws {
-  import chapter10.MonoidType._
+  def productMonoid[A, B](A: Monoid[A], B: Monoid[B]): Monoid[(A, B)] = new Monoid[(A, B)] {
+    override def op(a1: (A, B), a2: (A, B)): (A, B) = (a1, a2) match {
+      case ((a1, b1), (a2, b2)) => (A.op(a1, a2), B.op(b1, b2))
+    }
 
-  def associativeLaw[A](x: A, y: A, z: A)(implicit M: Monoid[A]): Unit = {
-    assert(M.op(M.op(x, y), z) == M.op(x, M.op(y, z)))
+    override def zero: (A, B) = (A.zero, B.zero)
   }
 
-  def associativeLawAny[A](x: A, y: A, z: A)(equal: (A, A) => Boolean) (implicit M: Monoid[A]): Unit = {
-    assert(equal(M.op(M.op(x, y), z), M.op(x, M.op(y, z))))
+  def functionMonoid[A, B](B: Monoid[B]): Monoid[A => B] = new Monoid[A => B]{
+    override def op(f1: A => B, f2: A => B): A => B = {
+      x: A => B.op(f1(x), f2(x))
+    }
+
+    override def zero: A => B = {
+      x: A => B.zero
+    }
   }
-
-  def zeroLaw[A](x: A)(implicit M: Monoid[A]): Unit = {
-    assert(M.op(x, M.zero) == x)
-    assert(M.op(M.zero, x) == x)
-  }
-
-  def zeroLawAny[A](x: A)(equal: (A, A) => Boolean)(implicit M: Monoid[A]): Unit = {
-    assert(equal(M.op(x, M.zero), x))
-    assert(equal(M.op(M.zero, x), x))
-  }
-
-  def testLaws[A: Monoid](x: A, y: A, z: A): Unit = {
-    associativeLaw(x, y, z)
-    zeroLaw(x)
-    zeroLaw(y)
-    zeroLaw(z)
-  }
-
-  def testLawsAny[A: Monoid](x: A, y: A, z: A)(equal: (A, A) => Boolean): Unit = {
-    associativeLawAny(x, y, z)(equal)
-    zeroLawAny(x)(equal)
-    zeroLawAny(y)(equal)
-    zeroLawAny(z)(equal)
-  }
-}
-
-object Run extends App {
-  import MonoidType._
-  import MonoidLaws._
-
-  testLaws[String]("A", "B", "C")(stringMonoid)
-  testLaws[List[Int]](List(1, 2), List(3), List(4))(listMonoid)
-  testLaws[Option[String]](Some("A"), Some("B"), Some("C"))(optionMonoid(stringMonoid))
-  testLaws[Option[String]](Some("A"), None, Some("C"))(optionMonoid(stringMonoid))
-
-  val add2 = (x: Int) => x + 2
-  val add3 = (x: Int) => x + 3
-  val add5 = (x: Int) => x + 5
-
-  testLawsAny[Int => Int](add2, add5, add3) { (f1, f2) =>
-    val seed = Random.nextInt()
-    f1(seed) == f2(seed)
-  }(endoMonoid)
-
-
-  print("All monoid law test passed")
 }
