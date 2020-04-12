@@ -2,7 +2,7 @@ package chapter11
 
 trait Monad[F[_]] extends Functor[F] {
 
-  def unit[A](a: A): F[A]
+  def unit[A](a: => A): F[A]
   def flatMap[A, B](ma: F[A])(f: A => F[B]): F[B]
 
   def map[A, B](ma: F[A])(f: A => B): F[B] =
@@ -59,13 +59,13 @@ trait Monad[F[_]] extends Functor[F] {
 
 object Monad {
   val listMonad: Monad[List] = new Monad[List] {
-    override def unit[A](a: A): List[A] = List(a)
+    override def unit[A](a: => A): List[A] = List(a)
     override def flatMap[A, B](ma: List[A])(f: A => List[B]): List[B] =
       ma.flatMap(f)
   }
 
   val optionMonad: Monad[Option] = new Monad[Option] {
-    override def unit[A](a: A): Option[A] = Option(a)
+    override def unit[A](a: => A): Option[A] = Option(a)
     override def flatMap[A, B](ma: Option[A])(f: A => Option[B]): Option[B] =
       ma.flatMap(f)
   }

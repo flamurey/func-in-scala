@@ -17,7 +17,8 @@ object MonadLaws {
   }
 
   def identity[F[_], A, B](f: A => F[B])(implicit M: Monad[F]) = {
-    assert(M.compose(f, M.unit[B]) == f)
-    assert(M.compose(M.unit[A], f) == f)
+    def unit[T](b: T): F[T] = M.unit[T](b)
+    assert(M.compose(f, unit[B]) == f)
+    assert(M.compose(unit[A], f) == f)
   }
 }
